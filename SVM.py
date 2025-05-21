@@ -22,18 +22,12 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 
-# لیست نام احساسات (بدون نمونه "fear")
 emo_labels = ["anger", "surprise", "happiness", "sadness", "neutral"]
 
-# بارگذاری تقسیم‌بندی‌های از پیش تهیه شده (folds) از فایل pickle
 with open("files/modified_folds.pickle", "rb") as of:
     modified_folds = pickle.load(of)
 
 def generate_folds(X, y, n=5):
-    """
-    تقسیم داده‌ها به n fold با استفاده از StratifiedKFold جهت حفظ توزیع کلاس‌ها.
-    خروجی تقسیم‌بندی‌ها به صورت فایل‌های JSON و pickle ذخیره می‌شوند.
-    """
     kfold = StratifiedKFold(n_splits=n, shuffle=True, random_state=seed_value)
     folds = {}
     count = 1
@@ -53,10 +47,6 @@ def generate_folds(X, y, n=5):
         print(key, val)
 
 def generate_confusion_matrix(cnf_matrix, classes, normalize=False, title='Confusion matrix'):
-    """
-    تولید و نمایش نمودار ماتریس اشتباهات.
-    در صورت انتخاب normalize، ماتریس به صورت نسبی نمایش داده می‌شود.
-    """
     if normalize:
         cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -80,9 +70,6 @@ def generate_confusion_matrix(cnf_matrix, classes, normalize=False, title='Confu
     return cnf_matrix
 
 def plot_confusion_matrix(predicted_labels_list, y_test_list):
-    """
-    محاسبه و رسم ماتریس اشتباهات با استفاده از لیست برچسب‌های پیش‌بینی شده و واقعی.
-    """
     cnf_matrix = confusion_matrix(y_test_list, predicted_labels_list)
     np.set_printoptions(precision=2)
     plt.figure()
@@ -90,14 +77,6 @@ def plot_confusion_matrix(predicted_labels_list, y_test_list):
     plt.show()
 
 def svm(X, y):
-    """
-    آموزش مدل SVM برای طبقه‌بندی احساسات با استفاده از یک رویکرد تو در تو:
-      - cv_outer: تقسیم‌بندی‌های خارجی (از قبل تهیه شده)
-      - cv_inner: تقسیم‌بندی‌های داخلی جهت جستجوی بهینه پارامترها (10 fold)
-    از OneVsOneClassifier برای مقابله با مشکل چندکلاسه بودن استفاده می‌شود.
-    جستجوی بهینه بر روی پارامترهای C و gamma با استفاده از BayesSearchCV انجام می‌شود.
-    یک pipeline شامل StandardScaler برای نرمال‌سازی ویژگی‌ها به کار رفته و در نهایت نتایج cross-validation گزارش می‌شوند.
-    """
     cv_outer = modified_folds
     cv_inner = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed_value)
     model = SVC()
@@ -115,12 +94,10 @@ def svm(X, y):
     print(f"Weighted Accuracy: {np.mean(scores['test_accuracy'] * 100)}")
     print(f"Unweighted Accuracy: {np.mean(scores['test_recall_macro']) * 100}")
 
-# بارگذاری ویژگی‌های استخراج شده از فایل (به عنوان مثال از opensmile) و برچسب‌های مربوطه
 X = np.load('files/modified_opensmile_eGeMAPS_features.npy').squeeze()
 N_FEATURES = X.shape[1]
 y = np.load('files/modified_emotions.npy')
 
-# مخلوط‌سازی تصادفی نمونه‌ها برای از بین بردن ترتیب احتمالی در داده‌ها
 N_SAMPLES = X.shape[0]
 perm = np.random.permutation(N_SAMPLES)
 X = X[perm]
