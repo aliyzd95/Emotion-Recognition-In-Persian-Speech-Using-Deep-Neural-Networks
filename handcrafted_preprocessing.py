@@ -18,23 +18,20 @@ import math
 import librosa
 from keras_preprocessing.sequence import pad_sequences
 
-# پارامترهای اصلی سیگنال صوتی و استخراج ویژگی
-sr = 16000  # نرخ نمونه‌برداری
-duration = 7.52  # مدت زمان سیگنال (ثانیه)
-n_fft = 512  # اندازه پنجره FFT (32ms)
-hop_length = 256  # فاصله بین فریم‌ها (16ms)
+sr = 16000
+duration = 7.52
+n_fft = 512 
+hop_length = 256 
 emo_codes = {"A": 0, "W": 1, "H": 2, "S": 3, "N": 4, "F": 5}
 emo_labels = ["anger", "surprise", "happiness", "sadness", "neutral", "fear"]
-path = "ShEMO"  # مسیر دیتاست
+path = "ShEMO" 
 
 
 def get_emotion_label(file_name):
-    # استخراج برچسب عددی احساس از نام فایل (کاراکتر چهارم)
     return emo_codes[file_name[3]]
 
 
 def get_emotion_name(file_name):
-    # استخراج نام احساس از نام فایل (کاراکتر ششم)
     return emo_labels[emo_codes[file_name[5]]]
 
 
@@ -42,10 +39,8 @@ def read_files():
     wavs = []
     print('---------- reading files ----------')
     for file in os.listdir(path):
-        # بارگذاری فایل صوتی با مدت زمان ثابت و تک کاناله
         y, _ = librosa.load(f'{path}/{file}', sr=sr, mono=True, duration=duration)
         wavs.append(y)
-    # یکنواخت‌سازی طول سیگنال‌ها با zero padding
     wavs_padded = pad_sequences(wavs, maxlen=int(sr * duration), dtype="float32")
     with open('files/wavs_padded.pickle', 'wb') as wp:
         pickle.dump(wavs_padded, wp)
@@ -61,7 +56,6 @@ def feature_extraction():
     print(f'n_frames: {N_FRAMES}')
     for y, name in zip(wavs_padded, os.listdir(path)):
         frames = []
-        # استخراج ویژگی‌های صوتی مختلف با librosa
         spectral_flatness = librosa.feature.spectral_flatness(y=y, n_fft=n_fft, hop_length=hop_length)[0]
         chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length)
         chroma_cens = librosa.feature.chroma_cens(y=y, sr=sr, hop_length=hop_length)
@@ -76,7 +70,6 @@ def feature_extraction():
         rms = librosa.feature.rms(y=y, frame_length=n_fft, hop_length=hop_length, S=S)[0]
         mfcc = librosa.feature.mfcc(y=y, n_fft=n_fft, sr=sr, hop_length=hop_length)
         mfcc_der = librosa.feature.delta(mfcc)
-        # ترکیب ویژگی‌های استخراج شده برای هر فریم
         for i in range(N_FRAMES + 1):
             f = [zero_crossing_rate[i], rms[i], spectral_flatness[i],
                  spectral_centroid[i], spectral_bandwidth[i], spectral_rolloff[i]]
