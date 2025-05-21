@@ -29,7 +29,6 @@ from keras.optimizers import Adam
 import seaborn
 import matplotlib.pyplot as plt
 
-# بارگذاری تقسیم‌بندی‌های خارجی از فایل pickle
 with open("files/outer_folds.pickle", "rb") as of:
     outer_folds = pickle.load(of)
 
@@ -38,10 +37,8 @@ emo_labels = ["anger", "surprise", "happiness", "sadness", "neutral"]
 
 
 def test_model(units=512, drop_rate=0.4):
-    # ورودی مدل با شکل (تعداد فریم‌ها, تعداد ویژگی‌ها)
     inp = Input(shape=(N_FRAMES, N_FEATURES))
     x = Masking()(inp)
-    # لایه‌های کانولوشنی و pooling برای استخراج ویژگی‌های محلی
     x = Conv1D(filters=128, kernel_size=5, strides=2, padding='same', activation='relu')(x)
     x = MaxPooling1D(2)(x)
     x = BatchNormalization()(x)
@@ -50,10 +47,8 @@ def test_model(units=512, drop_rate=0.4):
     x = MaxPooling1D(2)(x)
     x = BatchNormalization()(x)
     x = Dropout(drop_rate)(x)
-    # استفاده از لایه BLSTM جهت استخراج وابستگی‌های زمانی
     states, forward_h, _, backward_h, _ = Bidirectional(LSTM(units, return_sequences=True, return_state=True))(x)
     last_state = Concatenate()([forward_h, backward_h])
-    # لایه‌های dense جهت محاسبه "توجه" روی خروجی‌های LSTM
     hidden = Dense(units, activation='tanh', use_bias=False,
                    kernel_initializer=keras.initializers.RandomNormal(mean=0., stddev=1.))(states)
     out = Dense(1, activation='linear', use_bias=False,
@@ -61,7 +56,6 @@ def test_model(units=512, drop_rate=0.4):
     flat = Flatten()(out)
     energy = Lambda(lambda t: t / np.sqrt(units))(flat)
     alpha = Softmax(name="alpha")(energy)
-    # محاسبه بردار زمینه با ضرب نقطه‌ای بین حالت‌ها و وزن‌های توجه
     context_vector = Dot(axes=1)([states, alpha])
     context_vector = Concatenate()([context_vector, last_state])
     pred = Dense(5, activation="softmax")(context_vector)
@@ -89,7 +83,6 @@ def test_model(units=512, drop_rate=0.4):
     # model.add(layers.Bidirectional(layers.LSTM(units, input_shape=(N_FRAMES, N_FEATURES), return_sequences=False)))
     # model.add(layers.Dense(5, activation='softmax'))
 
-    # کامپایل مدل با loss مناسب برای طبقه‌بندی چندکلاسه
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     plot_model(model, to_file='results/model.png', show_shapes=True)
     print(model.summary())
@@ -97,7 +90,6 @@ def test_model(units=512, drop_rate=0.4):
 
 
 def report(real_class, pred_class):
-    # محاسبه و چاپ ماتریس اشتباهات و ذخیره نمودار آن
     cm = confusion_matrix(real_class, pred_class)
     print("confusion_matrix:\n" + str(cm) + "\n")
     data = np.array(cm).flatten().reshape(5, 5)
@@ -108,7 +100,6 @@ def report(real_class, pred_class):
 
 
 def generate_confusion_matrix(cnf_matrix, classes, normalize=False, title='Confusion matrix'):
-    # تولید و نمایش نمودار ماتریس اشتباهات (با یا بدون نرمال‌سازی)
     if normalize:
         cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -133,7 +124,6 @@ def generate_confusion_matrix(cnf_matrix, classes, normalize=False, title='Confu
 
 
 def plot_confusion_matrix(predicted_labels_list, y_test_list, title):
-    # رسم ماتریس اشتباهات نرمال‌شده با عنوان مشخص
     cnf_matrix = confusion_matrix(y_test_list, predicted_labels_list)
     np.set_printoptions(precision=2)
     plt.figure()
@@ -149,10 +139,8 @@ def fit_model(X, y):
     actual_targets = np.array([])
     kfold = outer_folds
     fold_no = 1
-    # اجرای k-fold (با تقسیم‌بندی‌های خارجی) جهت ارزیابی مدل
     for train, test in kfold.split(X, y):
         X_train, X_test = X[train], X[test]
-        # نرمال‌سازی ویژگی‌ها (تبدیل دوبعدی و بازسازی به شکل اصلی)
         scaler = StandardScaler()
         X_train = X_train.reshape((X_train.shape[0], N_FRAMES * N_FEATURES))
         X_train = scaler.fit_transform(X_train)
@@ -160,7 +148,6 @@ def fit_model(X, y):
         X_test = X_test.reshape((X_test.shape[0], N_FRAMES * N_FEATURES))
         X_test = scaler.transform(X_test)
         X_test = X_test.reshape((X_test.shape[0], N_FRAMES, N_FEATURES))
-        # ساخت و آموزش مدل
         model = test_model()
         best_weights_file = "files/openSMILE_" + MODEL + "_weights.h5"
         es = EarlyStopping(monitor='val_accuracy', verbose=1, patience=10)
@@ -191,14 +178,12 @@ def fit_model(X, y):
     plot_confusion_matrix(predicted_targets, actual_targets, 'hand_crafted_LLDs - CNN + attention-BLSTM')
 
 
-# بارگذاری ویژگی‌های استخراج شده و برچسب‌های مربوط به احساسات
 features = np.load('files/handcrafted_features-7.52s-32ms.npy')
 print(features.shape)
 N_FRAMES = features.shape[1]
 N_FEATURES = features.shape[2]
 emotions = np.load('files/emotions.npy')
 
-# مخلوط‌سازی تصادفی نمونه‌ها و انتخاب نمونه‌های غیر مربوط به کلاس "fear" (کد 5)
 N_SAMPLES = len(features)
 perm = np.random.permutation(N_SAMPLES)
 features = features[perm]
