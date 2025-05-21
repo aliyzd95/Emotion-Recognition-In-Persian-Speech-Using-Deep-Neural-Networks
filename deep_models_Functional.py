@@ -28,19 +28,12 @@ from keras import backend as K
 
 
 def non_nan_average(x):
-    """
-    محاسبه میانگین مقادیر غیر NaN در یک تنسور یک‌بعدی.
-    """
     nan_mask = tf.math.is_nan(x)
     x = tf.boolean_mask(x, tf.logical_not(nan_mask))
     return K.mean(x)
 
 
 def uar_accuracy(y_true, y_pred):
-    """
-    محاسبه دقت Unweighted Average Recall (UAR).
-    این معیار عملکرد مدل را برای داده‌های نامتوازن ارزیابی می‌کند.
-    """
     pred_class_label = K.argmax(y_pred, axis=-1)
     true_class_label = y_true
     cf_mat = tf.math.confusion_matrix(true_class_label, pred_class_label)
@@ -50,7 +43,6 @@ def uar_accuracy(y_true, y_pred):
     return non_nan_average(acc_per_class)
 
 
-# بارگذاری داده‌های تقسیم‌بندی‌شده برای Cross-Validation
 with open("files/modified_folds.pickle", "rb") as of:
     modified_folds = pickle.load(of)
 
@@ -59,10 +51,6 @@ emo_labels = ["anger", "surprise", "happiness", "sadness", "neutral"]
 
 
 def test_model(units=512):
-    """
-    ایجاد یک مدل شبکه عصبی مبتنی بر CNN برای طبقه‌بندی احساسات.
-    این مدل شامل لایه‌های کانولوشن، Pooling، BatchNormalization و Dropout است.
-    """
     input_speech = Input((1, N_FEATURES))
     speech = Conv1D(filters=128, kernel_size=5, strides=2, padding='same', activation='relu')(input_speech)
     speech = MaxPooling1D(padding='same')(speech)
@@ -83,10 +71,6 @@ def test_model(units=512):
 
 
 def fit_model(X, y):
-    """
-    آموزش و ارزیابی مدل با استفاده از K-Fold Cross Validation.
-    مدل روی ۵ قسمت از داده‌ها آموزش داده شده و میانگین دقت و UAR گزارش می‌شود.
-    """
     uar_per_fold = []
     acc_per_fold = []
     loss_per_fold = []
@@ -132,12 +116,10 @@ def fit_model(X, y):
     print(f'> Loss: {np.mean(loss_per_fold)}')
 
 
-# بارگذاری ویژگی‌های استخراج‌شده و برچسب‌های احساسات
 X = np.load('files/modified_opensmile_emolarge_features.npy')
 N_FEATURES = X.shape[1]
 y = np.load('files/modified_emotions.npy')
 
-# مخلوط کردن داده‌ها به‌صورت تصادفی
 N_SAMPLES = X.shape[0]
 perm = np.random.permutation(N_SAMPLES)
 X = X[perm]
