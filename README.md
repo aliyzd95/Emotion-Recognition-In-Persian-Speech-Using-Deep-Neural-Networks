@@ -7,7 +7,7 @@ This project aims to perform **Emotion Recognition in Speech** using **Deep Neur
 
 The goal of this project is to explore the effectiveness of **Convolutional Neural Networks (CNNs)** in emotion classification tasks based on speech signals. The project utilizes acoustic features like **eGeMAPS** and **ComParE**, which are commonly used for emotion recognition in speech processing. These features provide a detailed representation of the audio, capturing different aspects like pitch, energy, and formants, which are useful for emotion recognition.
 
-For more information, please the [paper](https://ieeexplore.ieee.org/abstract/document/9721504).
+For more information, please read the [paper](https://ieeexplore.ieee.org/abstract/document/9721504).
 
 ## Objective
 
